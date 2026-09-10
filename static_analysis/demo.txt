@@ -1,0 +1,3 @@
+python static_analyzer.py safe_case.py
+python static_analyzer.py safe_false_positive.py
+python static_analyzer.py unsafe_case.py

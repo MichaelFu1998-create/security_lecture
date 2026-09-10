@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Feed{% endblock %}
+{% block content %}
+  <div class="target">
+    <span class="tag">TARGET</span>
+    <h1>{{ post['body'] }}</h1>
+  </div>
+
+  <h2 class="sect">// leave a comment</h2>
+  <form method="POST" class="stack">
+    <input name="author" placeholder="handle" required>
+    <textarea name="body" placeholder="your comment (or... payload)" rows="3" required></textarea>
+    <button type="submit">&gt; post_comment</button>
+  </form>
+
+  <h2 class="sect">// comments <span class="count">[{{ comments|length }}]</span></h2>
+  <div class="log">
+  {% for c in comments %}
+    <div class="comment">
+      <div class="author">{{ c['author'] }}<span class="time">{{ c['created'] }}</span></div>
+      {# VULNERABLE: |safe renders attacker HTML/JS as-is. SECURE: auto-escape. #}
+      <div class="text">{% if SECURE %}{{ c['body'] }}{% else %}{{ c['body']|safe }}{% endif %}</div>
+    </div>
+  {% else %}
+    <p class="hint">no comments yet.</p>
+  {% endfor %}
+  </div>
+{% endblock %}

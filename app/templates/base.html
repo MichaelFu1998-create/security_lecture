@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chirp — {% block title %}{% endblock %}</title>
+  <style>
+    *{ box-sizing:border-box; }
+    :root{
+      --bg:#080b08; --panel:#0b110b; --panel2:#0e150e;
+      --fg:#b8f5be; --dim:#5f8f66; --accent:#39ff14; --link:#3be6ff;
+      --border:#173217;
+    }
+    /* Mode-reactive accent: red when vulnerable, green when hardened */
+    body.vuln   { --state:#ff4747; --glow:rgba(255,71,71,.50); }
+    body.secure { --state:#2bff88; --glow:rgba(43,255,136,.45); }
+
+    html,body{ margin:0; }
+    body{
+      background:
+        radial-gradient(1200px 600px at 50% -10%, rgba(57,255,20,.06), transparent 60%),
+        var(--bg);
+      color:var(--fg);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "DejaVu Sans Mono", monospace;
+      font-size:15px; line-height:1.5; min-height:100vh; padding:1.5rem 1rem;
+    }
+
+    /* CRT scanlines + vignette (subtle, decorative only) */
+    .scanlines{
+      position:fixed; inset:0; pointer-events:none; z-index:60;
+      background:repeating-linear-gradient(to bottom, rgba(0,0,0,0) 0 2px, rgba(0,0,0,.22) 2px 3px);
+      mix-blend-mode:multiply; opacity:.35;
+    }
+    .scanlines::after{
+      content:""; position:absolute; inset:0;
+      background:radial-gradient(130% 90% at 50% 0%, transparent 62%, rgba(0,0,0,.45));
+    }
+
+    /* Terminal window chrome */
+    .terminal{
+      max-width:760px; margin:0 auto; background:var(--panel);
+      border:1px solid var(--border); border-radius:10px; overflow:hidden;
+      box-shadow:0 0 0 1px rgba(57,255,20,.05), 0 0 42px var(--glow), inset 0 0 70px rgba(0,0,0,.55);
+    }
+    .titlebar{
+      display:flex; align-items:center; gap:.6rem; padding:.55rem .85rem;
+      background:linear-gradient(var(--panel2),var(--panel));
+      border-bottom:1px solid var(--border);
+      font-size:.78rem; letter-spacing:.09em; color:var(--dim);
+    }
+    .dots{ display:flex; gap:.35rem; }
+    .dots i{ width:11px; height:11px; border-radius:50%; display:block; }
+    .dots i:nth-child(1){ background:#ff5f56; }
+    .dots i:nth-child(2){ background:#ffbd2e; }
+    .dots i:nth-child(3){ background:#27c93f; }
+    .tt{ color:var(--accent); text-shadow:0 0 8px rgba(57,255,20,.5); }
+    .tt-right{ margin-left:auto; color:var(--state); text-shadow:0 0 10px var(--glow); font-weight:700; }
+
+    .mode{
+      margin:0; padding:.6rem .9rem; font-weight:700; letter-spacing:.06em;
+      border-bottom:1px solid var(--border); background:rgba(0,0,0,.28);
+      color:var(--state); text-shadow:0 0 12px var(--glow);
+    }
+    .mode.vuln{ animation:pulse 1.7s ease-in-out infinite; }
+    @keyframes pulse{ 0%,100%{opacity:1} 50%{opacity:.62} }
+
+    .prompt{ padding:.75rem .9rem 0; color:var(--dim); }
+    .prompt b{ color:var(--accent); font-weight:400; }
+    .cursor{ color:var(--accent); animation:blink 1s steps(1) infinite; }
+    @keyframes blink{ 50%{opacity:0} }
+
+    nav{
+      display:flex; gap:.55rem; align-items:center; flex-wrap:wrap;
+      padding:.55rem .9rem .85rem; border-bottom:1px dashed var(--border); margin-bottom:1rem;
+    }
+    nav a{
+      color:var(--link); text-decoration:none; text-transform:lowercase;
+      padding:.15rem .2rem; text-shadow:0 0 8px rgba(59,230,255,.35);
+    }
+    nav a::before{ content:"["; color:var(--dim); }
+    nav a::after{ content:"]"; color:var(--dim); }
+    nav a:hover{ color:#fff; text-shadow:0 0 12px var(--link); }
+    nav .spacer{ flex:1; }
+    nav .who{ color:var(--dim); }
+    nav .who b{ color:var(--accent); }
+
+    main{ padding:.2rem .9rem 1.15rem; }
+    h1{ font-size:1.4rem; margin:.4rem 0; color:#eaffe8; text-shadow:0 0 14px rgba(57,255,20,.35); }
+    h2.sect,h3.sect{ color:var(--accent); font-size:.95rem; letter-spacing:.05em; margin:1.25rem 0 .5rem; }
+
+    .target{ display:flex; align-items:center; gap:.6rem; border-left:3px solid var(--state); padding-left:.6rem; }
+    .tag{
+      font-size:.62rem; letter-spacing:.16em; color:var(--state);
+      border:1px solid var(--state); border-radius:4px; padding:.05rem .4rem; white-space:nowrap;
+    }
+
+    .stack{ display:flex; flex-direction:column; gap:.6rem; align-items:flex-start; margin:.4rem 0; }
+    label{ color:var(--dim); font-size:.85rem; }
+    input,textarea{
+      width:100%; max-width:440px; background:rgba(3,8,3,.6); color:var(--fg);
+      border:1px solid var(--border); border-radius:6px; padding:.5rem .6rem;
+      font:inherit; caret-color:var(--accent);
+    }
+    textarea{ min-height:72px; resize:vertical; }
+    input:focus,textarea:focus{
+      outline:none; border-color:var(--accent);
+      box-shadow:0 0 0 1px var(--accent), 0 0 14px rgba(57,255,20,.35);
+    }
+    ::placeholder{ color:#3f5f45; }
+    button{
+      background:transparent; color:var(--accent); border:1px solid var(--accent);
+      border-radius:6px; padding:.45rem .95rem; font:inherit; cursor:pointer;
+      text-shadow:0 0 8px rgba(57,255,20,.4); transition:.15s;
+    }
+    button:hover{ background:var(--accent); color:#03110a; box-shadow:0 0 18px rgba(57,255,20,.5); }
+
+    .comment{
+      border:1px solid var(--border); border-left:3px solid var(--link);
+      background:#0a0f0a; border-radius:6px; padding:.55rem .7rem; margin:.55rem 0;
+    }
+    .author{ font-weight:700; color:var(--link); }
+    .time{ color:var(--dim); font-weight:400; font-size:.78em; margin-left:.5rem; }
+    .text{ margin-top:.35rem; color:var(--fg); white-space:pre-wrap; word-break:break-word; }
+    .count{ color:var(--dim); font-size:.8rem; }
+
+    .record{ border:1px solid var(--border); border-radius:6px; overflow:hidden; margin:.4rem 0; max-width:540px; }
+    .record>div{ display:flex; gap:1rem; padding:.5rem .7rem; border-bottom:1px solid var(--border); }
+    .record>div:last-child{ border-bottom:none; }
+    .record .k{ color:var(--dim); min-width:70px; text-transform:uppercase; font-size:.74rem; letter-spacing:.08em; align-self:center; }
+    .record .v{ color:#eaffe8; word-break:break-word; }
+
+    .hint{ color:var(--dim); font-size:.85rem; }
+    .error{ color:#ff7a7a; text-shadow:0 0 10px rgba(255,80,80,.4); }
+    code{ background:rgba(2,18,2,.6); color:var(--accent); border:1px solid var(--border); padding:.05rem .35rem; border-radius:4px; }
+    a{ color:var(--link); }
+
+    @media (prefers-reduced-motion: reduce){
+      .mode.vuln, .cursor{ animation:none; }
+      .scanlines{ display:none; }
+    }
+  </style>
+</head>
+<body class="{{ 'secure' if SECURE else 'vuln' }}">
+  <div class="scanlines" aria-hidden="true"></div>
+
+  <div class="terminal">
+    <div class="titlebar">
+      <span class="dots"><i></i><i></i><i></i></span>
+      <span class="tt">CHIRP // SECURE-CODING LAB</span>
+      <span class="tt-right">{{ 'SECURE' if SECURE else 'VULN' }}</span>
+    </div>
+
+    <div class="mode {{ 'secure' if SECURE else 'vuln' }}">
+      {{ 'SECURE ✓ HARDENED — mitigations ON' if SECURE else 'VULNERABLE ▲ SYSTEM EXPOSED — mitigations OFF · run SECURE=1 to harden' }}
+    </div>
+
+    <div class="prompt">
+      <b>user@chirp</b>:~$ {{ 'harden --verify' if SECURE else 'exploit --target chirp' }}<span class="cursor">▮</span>
+    </div>
+
+    <nav>
+      <a href="{{ url_for('feed') }}">Feed</a>
+      {% if me %}
+        <a href="{{ url_for('profile', user_id=me['id']) }}">Profile</a>
+        <span class="spacer"></span>
+        <span class="who">session: <b>{{ me['username'] }}</b></span>
+        <a href="{{ url_for('logout') }}">Logout</a>
+      {% else %}
+        <span class="spacer"></span>
+        <a href="{{ url_for('login') }}">Login</a>
+      {% endif %}
+    </nav>
+
+    <main>{% block content %}{% endblock %}</main>
+  </div>
+</body>
+</html>

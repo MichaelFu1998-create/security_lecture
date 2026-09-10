@@ -1,0 +1,5 @@
+Subject: Can't upload my profile picture
+
+Hi team, whenever I try to upload a profile picture larger than about 2 MB the
+page just spins and nothing happens. Smaller images work fine. Could you take a
+look? Thanks!  — Bob

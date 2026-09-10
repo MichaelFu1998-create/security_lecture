@@ -1,0 +1,2 @@
+Q: What image formats can I upload? A: PNG and JPEG up to 2 MB.
+Q: How do I reset my password? A: Use the "Forgot password" link on /login.

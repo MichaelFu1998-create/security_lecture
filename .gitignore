@@ -1,0 +1,15 @@
+# Never commit the virtualenv (the repo currently does — that is an anti-pattern)
+venv/
+.venv/
+
+# Runtime + demo artefacts
+*.db
+*.pyc
+__pycache__/
+.env
+attacker/stolen.log
+.DS_Store
+
+# Tooling caches
+.semgrep/
+.pytest_cache/

@@ -1,0 +1,30 @@
+# Minimal security ruleset for the lecture. Real projects should also use the
+# maintained rulepacks, e.g. `semgrep --config p/python --config p/flask`.
+rules:
+  - id: string-built-sql-query
+    languages: [python]
+    severity: ERROR
+    message: >
+      SQL query built with string formatting/concatenation. Use a
+      parameterized query -- cursor.execute(sql, params) -- to prevent SQL
+      injection.
+    pattern-either:
+      - pattern: $C.execute(f"...")
+      - pattern: $C.execute("..." % ...)
+      - pattern: $C.execute("..." + ...)
+      - patterns:
+          - pattern-either:
+              - pattern: $Q = f"..."
+              - pattern: $Q = "..." % ...
+              - pattern: $Q = "..." + ...
+          - metavariable-regex:
+              metavariable: $Q
+              regex: (?i).*(query|sql|stmt|statement).*
+
+  - id: flask-render-template-string
+    languages: [python]
+    severity: WARNING
+    message: >
+      render_template_string with dynamic input can enable server-side
+      template injection / XSS. Prefer templates with auto-escaping.
+    pattern: render_template_string(...)
