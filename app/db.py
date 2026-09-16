@@ -1,22 +1,18 @@
-"""SQLite access + first-run seeding for the Chirp demo app."""
+"""SQLite access + first-run seeding for VulnLab."""
 import os
 import sqlite3
 
 from flask import g
 from werkzeug.security import generate_password_hash
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "chirp.db")
+DB_PATH = os.path.join(os.path.dirname(__file__), "vulnlab.db")
 SCHEMA_PATH = os.path.join(os.path.dirname(__file__), "seed.sql")
 
 # username, plaintext password, email, bio
 SEED_USERS = [
-    ("alice",   "password123", "alice@example.com",   "Coffee, code, and cats."),
-    ("bob",     "hunter2",     "bob@example.com",     "Weekend cyclist."),
-    ("mallory", "letmein",     "mallory@evil.com",    "Totally trustworthy."),
-]
-
-SEED_POSTS = [
-    (1, "Welcome to Chirp! This is Alice's first post — leave a comment below."),
+    ("alice",   "password123", "alice@example.com", "Coffee, code, and cats."),
+    ("bob",     "hunter2",     "bob@example.com",   "Weekend cyclist."),
+    ("mallory", "letmein",     "mallory@evil.com",  "Totally trustworthy."),
 ]
 
 
@@ -49,15 +45,19 @@ def init_db(force=False):
             "VALUES (?, ?, ?, ?, ?)",
             (username, pw, generate_password_hash(pw), email, bio),
         )
-    for author_id, body in SEED_POSTS:
-        conn.execute(
-            "INSERT INTO posts (author_id, body) VALUES (?, ?)", (author_id, body)
-        )
     conn.commit()
     conn.close()
 
 
+def reset_state():
+    """Undo whatever the demos mutated: clear XSS comments, restore emails."""
+    conn = get_db()
+    conn.execute("DELETE FROM comments")
+    for uid, (_u, _pw, email, _bio) in enumerate(SEED_USERS, start=1):
+        conn.execute("UPDATE users SET email = ? WHERE id = ?", (email, uid))
+    conn.commit()
+
+
 if __name__ == "__main__":
-    # `python db.py` (re)builds a fresh database.
     init_db(force=True)
     print("Rebuilt", DB_PATH)

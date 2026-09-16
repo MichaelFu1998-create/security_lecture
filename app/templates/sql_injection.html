@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}SQL Injection{% endblock %}
+{% block content %}
+  <h1>SQL Injection</h1>
+  <div class="sub">Section 1 · authentication bypass</div>
+  {% include "_toggle.html" %}
+
+  <h2>// what is it?</h2>
+  <div class="explain">
+    SQL injection happens when user input is <b>concatenated straight into a SQL query</b>.
+    The attacker's text stops being data and becomes part of the command, letting them rewrite
+    what the query does — here, logging in without a valid password.
+  </div>
+
+  <h2>// try it</h2>
+  <div class="panel">
+    <form method="POST" action="/sql-injection?mode={{ mode }}" class="stack">
+      <input type="hidden" name="mode" value="{{ mode }}">
+      <label>username <input name="username" id="u" placeholder="username"></label>
+      <label>password <input name="password" placeholder="password"></label>
+      <div class="row">
+        <button type="submit">&gt; login</button>
+        <button type="button" class="btn ghost" onclick="document.getElementById('u').value=&quot;' OR 1=1 --&quot;">insert payload: ' OR 1=1 --</button>
+      </div>
+    </form>
+
+    {% if result %}
+      {% if result.ok %}
+        <div class="result {{ 'ok' if mode == 'vuln' else 'win' }}">
+          {% if mode == 'vuln' %}✅ Authenticated as <b>{{ result.user }}</b> — bypassed with no valid password!{% else %}✅ Authenticated as <b>{{ result.user }}</b> (valid credentials).{% endif %}
+        </div>
+      {% else %}
+        <div class="result bad">❌ Login failed{% if result.error %} — <code>{{ result.error }}</code>{% endif %}.</div>
+      {% endif %}
+
+      <h2>// under the hood</h2>
+      <div class="reveal">
+      {% if mode == 'vuln' %}
+        <div class="sub">Your input was pasted directly into the query string:</div>
+        <pre><code>query = "SELECT * FROM users WHERE username = '" + username + "' AND password = '" + password + "'"</code></pre>
+        <div class="sub">What actually ran:</div>
+        <pre><code>{{ result.executed }}</code></pre>
+        <div class="sub"><code>' OR 1=1 --</code> closes the quote, makes <code>WHERE</code> always true, and <code>--</code> comments out the password check → the first user row is returned.</div>
+      {% else %}
+        <div class="sub">Input is passed as a bound parameter, never as code:</div>
+        <pre><code>{{ result.executed }}</code></pre>
+        <div class="sub">params = {{ result.params }} — the whole string <code>' OR 1=1 --</code> is treated as a literal username (which doesn't exist), and the password is checked against a stored hash.</div>
+      {% endif %}
+      </div>
+    {% endif %}
+  </div>
+
+  <h2>// the fix</h2>
+  <div class="fix">Use <b>parameterized queries</b> (prepared statements) so input is always data, never code — and store <b>hashed</b> passwords. Flip the toggle to <b>secure</b> and try the payload again.</div>
+{% endblock %}

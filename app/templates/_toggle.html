@@ -1,0 +1,5 @@
+<div class="toggle">
+  <span class="lbl">MODE</span>
+  <a class="seg vuln {{ 'on' if mode == 'vuln' else '' }}" href="{{ request.path }}?mode=vuln">vulnerable</a>
+  <a class="seg secure {{ 'on' if mode == 'secure' else '' }}" href="{{ request.path }}?mode=secure">secure</a>
+</div>

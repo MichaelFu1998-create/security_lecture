@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Prompt Injection{% endblock %}
+{% block content %}
+  <h1>Prompt Injection</h1>
+  <div class="sub">Section 5 · the "injection" bug for AI agents (slide 42)</div>
+  {% include "_toggle.html" %}
+
+  <h2>// what is it?</h2>
+  <div class="explain">
+    An AI agent reads <b>untrusted content</b> (here, a support ticket). If that content is fed
+    into the same channel as its instructions, an attacker can hide commands in it — the
+    <b>same class of bug</b> as SQL injection and XSS, one layer up.
+  </div>
+
+  <h2>// try it</h2>
+  <div class="panel">
+    <div class="sub">SupportBot's instructions (trusted):</div>
+    <pre><code>{{ system }}</code></pre>
+
+    <div class="row">
+      <a class="btn ghost" href="/prompt-injection?mode={{ mode }}&ticket=benign">benign ticket</a>
+      <a class="btn ghost" href="/prompt-injection?mode={{ mode }}&ticket=poisoned">poisoned ticket</a>
+    </div>
+    <div class="sub" style="margin-top:.5rem">Incoming ticket (untrusted · <b>{{ kind }}</b>):</div>
+    <pre><code>{{ ticket }}</code></pre>
+    <a class="btn" href="/prompt-injection?mode={{ mode }}&ticket={{ kind }}&run=1">&gt; run agent</a>
+
+    {% if outcome %}
+      <h2>// agent trace</h2>
+      <div class="reveal">
+        {% for label, detail in outcome.steps %}<div>• <b>{{ label }}</b> — {{ detail }}</div>{% endfor %}
+      </div>
+      {% if outcome.leaked %}
+        <div class="result ok">💀 The agent obeyed the injected instructions and leaked the secret:</div>
+      {% else %}
+        <div class="result {{ 'win' if mode == 'secure' else 'bad' }}">{% if mode == 'secure' %}🛡️ Injected instructions were treated as data, not obeyed.{% else %}Agent replied normally.{% endif %}</div>
+      {% endif %}
+      <pre><code>{{ outcome.reply }}</code></pre>
+    {% endif %}
+  </div>
+
+  <h2>// the fix</h2>
+  <div class="fix">Keep untrusted content <b>out of the instruction channel</b>: separate data from instructions, constrain tools with allow-lists, filter outputs, and require human approval for sensitive actions.</div>
+{% endblock %}
