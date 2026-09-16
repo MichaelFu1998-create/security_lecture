@@ -4,7 +4,7 @@
 
 This week's lecture gives you a **fundamental understanding of web security** and helps
 you spot vulnerabilities in your own software project. The code here accompanies the
-*Common Web Attacks* slides.
+*Common Web Attacks* lecture.
 
 **VulnLab** is a small teaching app with **one section per vulnerability**. Each section
 has a *what is it?* explainer, an interactive demo with a **Vulnerable / Secure toggle**,
@@ -36,13 +36,13 @@ restart, no separate terminals.
 
 ## 🧪 The sections (`app/`)
 
-| # | Section (route) | Vulnerability | Slides |
-|---|---|---|---|
-| 1 | `/sql-injection` | SQL injection auth bypass (with the executed query revealed) | 23–29 |
-| 2 | `/access-control` | Broken access control / IDOR | 30–33 |
-| 3 | `/xss` | Stored XSS → cookie theft (inline attacker log) | 34–41 |
-| 4 | `/csrf` | Cross-site request forgery | new |
-| 5 | `/prompt-injection` | Prompt injection in an AI agent | 42 |
+| # | Section (route) | Vulnerability |
+|---|---|---|
+| 1 | `/sql-injection` | SQL injection auth bypass (with the executed query revealed) |
+| 2 | `/access-control` | Broken access control / IDOR |
+| 3 | `/xss` | Stored XSS → cookie theft (inline attacker log) |
+| 4 | `/csrf` | Cross-site request forgery |
+| 5 | `/prompt-injection` | Prompt injection in an AI agent |
 
 Each section is self-contained; there is **no global mode flag** — the toggle is
 per-section and per-request.

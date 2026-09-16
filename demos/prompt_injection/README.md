@@ -1,4 +1,4 @@
-# Prompt injection demo (pays off slide 42)
+# Prompt injection demo
 
 Prompt injection is the *same class of bug* as SQL injection and XSS: untrusted
 input crosses into a channel that a downstream interpreter (here, an LLM agent)
