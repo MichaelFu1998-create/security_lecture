@@ -1,7 +1,7 @@
 """
 Prompt injection, the VULNERABLE way — a deterministic, offline demo.
 
-Slide 42's point, made runnable: prompt injection is the SAME class of bug as
+Prompt injection is the SAME class of bug as
 SQL injection and XSS. Untrusted input (a support ticket) is concatenated into
 the SAME channel the "model" reads its instructions from, so the attacker's
 text is obeyed as if it were a developer instruction.

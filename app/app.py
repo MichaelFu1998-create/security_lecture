@@ -12,11 +12,11 @@ show the attack, flip the toggle, show the fix.
     python app.py            # http://127.0.0.1:5050  (override with PORT=)
 
 Sections:
-    /sql-injection     SQL injection auth bypass      (slides 23-29)
-    /access-control    Broken access control / IDOR   (slides 30-33)
-    /xss               Stored XSS -> cookie theft      (slides 34-41)
-    /csrf              Cross-site request forgery      (new)
-    /prompt-injection  Prompt injection in an agent    (slide 42)
+    /sql-injection     SQL injection auth bypass
+    /access-control    Broken access control / IDOR
+    /xss               Stored XSS -> cookie theft
+    /csrf              Cross-site request forgery
+    /prompt-injection  Prompt injection in an agent
 """
 import os
 import secrets
@@ -68,7 +68,7 @@ def home():
     return render_template("home.html", section="home", mode="")
 
 
-# --- 1. SQL injection (slides 23-29) -------------------------------------
+# --- 1. SQL injection -------------------------------------
 @app.route("/sql-injection", methods=["GET", "POST"])
 def sql_injection():
     mode = _mode()
@@ -105,7 +105,7 @@ def sql_injection():
                            mode=mode, result=result)
 
 
-# --- 2. Broken access control / IDOR (slides 30-33) ----------------------
+# --- 2. Broken access control / IDOR ----------------------
 @app.route("/access-control")
 def access_control():
     mode = _mode()
@@ -127,7 +127,7 @@ def access_control():
                            mode=mode, current_id=current_id, result=result)
 
 
-# --- 3. Stored XSS + cookie theft (slides 34-41) -------------------------
+# --- 3. Stored XSS + cookie theft -------------------------
 @app.route("/xss", methods=["GET", "POST"])
 def xss():
     mode = _mode()
@@ -137,6 +137,11 @@ def xss():
                      (request.form.get("author") or "anon", request.form.get("body", "")))
         conn.commit()
         return redirect(url_for("xss", mode=mode))
+    # In secure mode nothing can be stolen (escaped output + HttpOnly cookie),
+    # so clear any loot captured during an earlier vulnerable run — otherwise a
+    # stale value would make secure mode look like it leaked.
+    if mode == "secure":
+        _xss_loot["captured"] = None
     comments = conn.execute("SELECT * FROM comments ORDER BY id").fetchall()
     resp = make_response(render_template("xss.html", section="xss", mode=mode,
                                          comments=comments, loot=_xss_loot["captured"]))
@@ -168,7 +173,7 @@ def xss_reset():
     return redirect(url_for("xss", mode=_mode()))
 
 
-# --- 4. CSRF (new) -------------------------------------------------------
+# --- 4. CSRF -------------------------------------------------------
 def _csrf_token():
     tok = session.get("csrf_token")
     if not tok:
@@ -219,7 +224,7 @@ def csrf_reset():
     return redirect(url_for("csrf", mode=_mode()))
 
 
-# --- 5. Prompt injection (slide 42) --------------------------------------
+# --- 5. Prompt injection --------------------------------------
 @app.route("/prompt-injection")
 def prompt_injection():
     mode = _mode()
