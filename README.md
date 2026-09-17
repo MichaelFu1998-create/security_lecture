@@ -41,8 +41,7 @@ restart, no separate terminals.
 | 1 | `/sql-injection` | SQL injection auth bypass (with the executed query revealed) |
 | 2 | `/access-control` | Broken access control / IDOR |
 | 3 | `/xss` | Stored XSS → cookie theft (inline attacker log) |
-| 4 | `/csrf` | Cross-site request forgery |
-| 5 | `/prompt-injection` | Prompt injection in an AI agent |
+| 4 | `/prompt-injection` | Prompt injection in an AI agent |
 
 Each section is self-contained; there is **no global mode flag** — the toggle is
 per-section and per-request.
@@ -60,8 +59,8 @@ still runs standalone (`python demos/prompt_injection/agent_unsafe.py`).
 
 ## 🌐 Optional: separate-origin attacker (`attacker/`)
 The XSS section shows cookie theft inline. For a more realistic *separate-origin*
-version, `attacker/evil_server.py` (port 6001) hosts a cookie-collector and a CSRF
-trap page — see `attacker/payloads.md`.
+version, `attacker/evil_server.py` (port 6001) hosts a cookie-collector — see
+`attacker/payloads.md`.
 
 ---
 

@@ -15,23 +15,19 @@ Sections:
     /sql-injection     SQL injection auth bypass
     /access-control    Broken access control / IDOR
     /xss               Stored XSS -> cookie theft
-    /csrf              Cross-site request forgery
     /prompt-injection  Prompt injection in an agent
 """
 import os
-import secrets
 import sqlite3
 
-from flask import (Flask, request, redirect, url_for, session, render_template,
+from flask import (Flask, request, redirect, url_for, render_template,
                    abort, make_response, jsonify)
 from werkzeug.security import check_password_hash
 
-import config
 import db
 import agents
 
 app = Flask(__name__)
-app.secret_key = config.SECRET_KEY
 app.teardown_appcontext(db.close_db)
 
 # (id, label, url-slug) — drives the sidebar menu.
@@ -39,7 +35,6 @@ SECTIONS = [
     ("sql_injection",   "SQL Injection",           "sql-injection"),
     ("access_control",  "Broken Access Control",   "access-control"),
     ("xss",             "Stored XSS + Cookie Theft", "xss"),
-    ("csrf",            "CSRF",                    "csrf"),
     ("prompt_injection", "Prompt Injection",       "prompt-injection"),
 ]
 
@@ -173,58 +168,7 @@ def xss_reset():
     return redirect(url_for("xss", mode=_mode()))
 
 
-# --- 4. CSRF -------------------------------------------------------
-def _csrf_token():
-    tok = session.get("csrf_token")
-    if not tok:
-        tok = secrets.token_hex(8)
-        session["csrf_token"] = tok
-    return tok
-
-
-def _set_alice_email(email):
-    conn = db.get_db()
-    conn.execute("UPDATE users SET email = ? WHERE id = 1", (email,))
-    conn.commit()
-
-
-@app.route("/csrf")
-def csrf():
-    mode = _mode()
-    alice = db.get_db().execute("SELECT * FROM users WHERE id = 1").fetchone()
-    return render_template("csrf.html", section="csrf", mode=mode, alice=alice,
-                           token=_csrf_token(), result=request.args.get("result"))
-
-
-@app.route("/csrf/change", methods=["POST"])
-def csrf_change():
-    mode = _mode()
-    if mode == "secure" and request.form.get("csrf_token") != session.get("csrf_token"):
-        return redirect(url_for("csrf", mode=mode, result="blocked"))
-    email = request.form.get("new_email", "")
-    if email:
-        _set_alice_email(email)
-    return redirect(url_for("csrf", mode=mode, result="changed"))
-
-
-@app.route("/csrf/attack")
-def csrf_attack():
-    """Simulates the victim's browser being tricked into a cross-site request
-    that carries the ambient session cookie but NO CSRF token."""
-    mode = _mode()
-    if mode == "secure":
-        return redirect(url_for("csrf", mode=mode, result="attack_blocked"))
-    _set_alice_email("attacker@evil.com")
-    return redirect(url_for("csrf", mode=mode, result="attack_success"))
-
-
-@app.route("/csrf/reset")
-def csrf_reset():
-    _set_alice_email("alice@example.com")
-    return redirect(url_for("csrf", mode=_mode()))
-
-
-# --- 5. Prompt injection --------------------------------------
+# --- 4. Prompt injection --------------------------------------
 @app.route("/prompt-injection")
 def prompt_injection():
     mode = _mode()

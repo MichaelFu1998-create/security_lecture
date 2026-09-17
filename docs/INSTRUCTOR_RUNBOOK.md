@@ -26,10 +26,7 @@ has a **Vulnerable / Secure** toggle — show the attack, then flip to the fix.
    payload*, **post** → the **🕵️ attacker log** fills with the stolen `vl_demo_session`
    cookie. Flip to **secure** → the comment shows as inert text and nothing is captured.
    Use *reset* to clear.
-4. **CSRF** (`/csrf`). Click *😈 visit malicious site* in vuln → alice's email silently
-   becomes `attacker@evil.com`; flip to **secure** → the forged request is rejected. *reset*
-   restores it.
-5. **Prompt Injection** (`/prompt-injection`). Choose the *poisoned ticket*,
+4. **Prompt Injection** (`/prompt-injection`). Choose the *poisoned ticket*,
    **run agent** in vuln → the agent leaks the secret; flip to **secure** → treated as data.
    Land the parallel: same bug class as SQLi/XSS.
 
